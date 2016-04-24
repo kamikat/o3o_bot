@@ -9,6 +9,7 @@ import (
   "strings"
   "encoding/hex"
   "crypto/md5"
+  "math/rand"
   "github.com/tucnak/telebot"
 )
 
@@ -20,6 +21,7 @@ type KaomojiDict struct {
 var bot *telebot.Bot
 var dict []KaomojiDict
 var tags []string
+var next map[string][]string = make(map[string][]string)
 
 func main() {
 
@@ -69,6 +71,9 @@ func updateDict() {
     tags = make([]string, len(dict))
     for i, e := range dict {
       tags[i] = e.Tag
+      for _, o3o := range e.Yan {
+        next[o3o] = e.Yan
+      }
     }
     log.Println("Kaomoji dictionary initialized.")
   }
@@ -79,16 +84,20 @@ func messages() {
     log.Println("--- new message ---")
     log.Println("from:", message.Sender)
     log.Println("text:", message.Text)
-    switch {
+    switch text := message.Text; {
     case message.Text == "/start":
       bot.SendMessage(message.Chat, `Here is o3o bot.`, nil)
     case message.Text == "/tags":
       bot.SendMessage(message.Chat,
       "List of kaomoji tags:\n\n" + strings.Join(tags, "\n") +
-      "\n\nVisit https://github.com/guo-yu/o3o/blob/master/yan.json for a full list of kaomojies",
+      "\n\nFull list of kaomojies: https://github.com/guo-yu/o3o/blob/master/yan.json ",
       &telebot.SendOptions { DisableWebPagePreview: true })
     default:
-      bot.SendMessage(message.Chat, `o3o is in panic.`, nil)
+      if yans, found := next[text]; found {
+        bot.SendMessage(message.Chat, yans[rand.Intn(len(yans))], nil)
+      } else {
+        bot.SendMessage(message.Chat, `o3o is in panic.`, nil)
+      }
     }
   }
 }
@@ -125,7 +134,7 @@ func queries() {
       if tag, q := entry.Tag, query.Text; strings.Contains(" " + tag, " " + q) {
         for _, y := range entry.Yan {
           if len(results) < cap(results) {
-            sum := md5.Sum([]byte(tag + ":" + y))
+            sum := md5.Sum([]byte(y))
             result_id := string(hex.EncodeToString(sum[:]))
             if _, found := result_guard[result_id]; !found {
               results = append(results, &KaomojiWrapper {
