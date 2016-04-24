@@ -93,23 +93,21 @@ func messages() {
   }
 }
 
-type KaomojiResult struct {
-  Type string `json:"type"`
+type Result struct {
   Id string `json:"id"`
+  Type string `json:"type"`
   Title string `json:"title"`
   Text string `json:"message_text"`
   Description string `json:"description"`
 }
 
 type KaomojiWrapper struct {
-  Result KaomojiResult
+  Result Result
 }
 
 func (wrapper KaomojiWrapper) MarshalJSON() ([]byte, error) {
   r := wrapper.Result
   r.Type = "article";
-  sum := md5.Sum([]byte(r.Title + r.Text))
-  r.Id = string(hex.EncodeToString(sum[:]))
   bytes, err := json.Marshal(r);
   return bytes, err
 }
@@ -121,14 +119,20 @@ func queries() {
     log.Println("text:", query.Text)
 
     results := make([]telebot.Result, 0, 19)
+    result_guard := make(map[string]bool)
 
     for _, entry := range dict {
       if tag, q := entry.Tag, query.Text; strings.Contains(" " + tag, " " + q) {
         for _, y := range entry.Yan {
           if len(results) < cap(results) {
-            results = append(results, &KaomojiWrapper {
-              KaomojiResult { Title: y, Text: y, Description: tag },
-            })
+            sum := md5.Sum([]byte(tag + ":" + y))
+            result_id := string(hex.EncodeToString(sum[:]))
+            if _, found := result_guard[result_id]; !found {
+              results = append(results, &KaomojiWrapper {
+                Result { Id: result_id, Title: y, Text: y, Description: tag },
+              })
+              result_guard[result_id] = true
+            }
           }
         }
       }
