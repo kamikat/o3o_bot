@@ -4,10 +4,18 @@ import (
   "os"
   "log"
   "time"
+  "net/http"
+  "encoding/json"
   "github.com/tucnak/telebot"
 )
 
+type KaomojiDict struct {
+  Tag   string `json:"tag"`
+  Yan []string `json:"yan"`
+}
+
 var bot *telebot.Bot
+var dict []KaomojiDict
 
 func main() {
 
@@ -17,6 +25,8 @@ func main() {
   } else {
     log.Fatal("Please set 'BOT_API_TOKEN' from environment variable")
   }
+
+  updateDict()
 
   if newBot, err := telebot.NewBot(token); err != nil {
     log.Fatal(err);
@@ -31,6 +41,27 @@ func main() {
   go queries()
 
   bot.Start(1 * time.Second)
+}
+
+func updateDict() {
+  log.Println("Initializing kaomoji dictionary...")
+
+  body := map[string][]KaomojiDict{}
+
+  resp, err := http.Get("https://raw.githubusercontent.com/guo-yu/o3o/master/yan.json")
+
+  if err != nil {
+    log.Fatal(err)
+  }
+
+  decoder := json.NewDecoder(resp.Body)
+
+  if err := decoder.Decode(&body); err != nil {
+    log.Fatal(err)
+  } else {
+    dict = body["list"]
+    log.Println("Kaomoji dictionary initialized.")
+  }
 }
 
 func messages() {
