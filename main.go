@@ -19,6 +19,7 @@ type KaomojiDict struct {
 
 var bot *telebot.Bot
 var dict []KaomojiDict
+var tags []string
 
 func main() {
 
@@ -49,7 +50,7 @@ func main() {
 }
 
 func updateDict() {
-  log.Println("Initializing kaomoji dictionary...")
+  log.Println("Updating kaomoji dictionary...")
 
   body := map[string][]KaomojiDict{}
 
@@ -65,6 +66,10 @@ func updateDict() {
     log.Fatal(err)
   } else {
     dict = body["list"]
+    tags = make([]string, len(dict))
+    for i, e := range dict {
+      tags[i] = e.Tag
+    }
     log.Println("Kaomoji dictionary initialized.")
   }
 }
@@ -77,6 +82,11 @@ func messages() {
     switch {
     case message.Text == "/start":
       bot.SendMessage(message.Chat, `Here is o3o bot.`, nil)
+    case message.Text == "/tags":
+      bot.SendMessage(message.Chat,
+      "List of kaomoji tags:\n\n" + strings.Join(tags, "\n") +
+      "\n\nVisit https://github.com/guo-yu/o3o/blob/master/yan.json for a full list of kaomojies",
+      &telebot.SendOptions { DisableWebPagePreview: true })
     default:
       bot.SendMessage(message.Chat, `o3o is in panic.`, nil)
     }
