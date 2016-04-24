@@ -12,8 +12,14 @@ var bot *telebot.Bot
 func main() {
 
   token := os.Getenv("BOT_API_TOKEN")
+  if len(token) > 0 {
+    log.Printf("Telegram Bot Token: %v\n", token)
+  } else {
+    log.Fatal("Please set 'BOT_API_TOKEN' from environment variable")
+  }
+
   if newBot, err := telebot.NewBot(token); err != nil {
-    return
+    log.Fatal(err);
   } else {
     bot = newBot
   }
