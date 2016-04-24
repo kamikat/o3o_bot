@@ -110,7 +110,7 @@ func queries() {
     log.Println("from:", query.From)
     log.Println("text:", query.Text)
 
-    results := make([]telebot.Result, 0, 10)
+    results := make([]telebot.Result, 0, 19)
 
     for _, entry := range dict {
       if tag, q := entry.Tag, query.Text; strings.Contains(" " + tag, " " + q) {
