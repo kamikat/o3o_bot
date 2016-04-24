@@ -66,9 +66,14 @@ func updateDict() {
 
 func messages() {
   for message := range bot.Messages {
+    log.Println("--- new message ---")
+    log.Println("from:", message.Sender)
+    log.Println("text:", message.Text)
     switch {
     case message.Text == "/start":
-      bot.SendMessage(message.Chat, "Hello, " + message.Sender.FirstName + "!", nil)
+      bot.SendMessage(message.Chat, `Here is o3o bot.`, nil)
+    default:
+      bot.SendMessage(message.Chat, `o3o is in panic.`, nil)
     }
   }
 }
