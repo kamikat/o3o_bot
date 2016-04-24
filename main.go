@@ -6,6 +6,9 @@ import (
   "time"
   "net/http"
   "encoding/json"
+  "strings"
+  "encoding/hex"
+  "crypto/md5"
   "github.com/tucnak/telebot"
 )
 
@@ -39,6 +42,8 @@ func main() {
 
   go messages()
   go queries()
+
+  log.Printf("Started.")
 
   bot.Start(1 * time.Second)
 }
@@ -78,14 +83,46 @@ func messages() {
   }
 }
 
+type KaomojiResult struct {
+  Type string `json:"type"`
+  Id string `json:"id"`
+  Title string `json:"title"`
+  Text string `json:"message_text"`
+  Description string `json:"description"`
+}
+
+type KaomojiWrapper struct {
+  Result KaomojiResult
+}
+
+func (wrapper KaomojiWrapper) MarshalJSON() ([]byte, error) {
+  r := wrapper.Result
+  r.Type = "article";
+  sum := md5.Sum([]byte(r.Title + r.Text))
+  r.Id = string(hex.EncodeToString(sum[:]))
+  bytes, err := json.Marshal(r);
+  return bytes, err
+}
+
 func queries() {
   for query := range bot.Queries {
     log.Println("--- new query ---")
     log.Println("from:", query.From)
     log.Println("text:", query.Text)
 
-    // There you build a slice of let's say, article results:
-    results := []telebot.Result{/*...*/}
+    results := make([]telebot.Result, 0, 10)
+
+    for _, entry := range dict {
+      if tag, q := entry.Tag, query.Text; strings.Contains(" " + tag, " " + q) {
+        for _, y := range entry.Yan {
+          if len(results) < cap(results) {
+            results = append(results, &KaomojiWrapper {
+              KaomojiResult { Title: y, Text: y, Description: tag },
+            })
+          }
+        }
+      }
+    }
 
     // And finally respond to the query:
     if err := bot.Respond(query, results); err != nil {
